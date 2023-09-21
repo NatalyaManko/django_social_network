@@ -1,17 +1,17 @@
 import re
-from django.http import Http404
+
+from blog.models import Category, Comment, Post
 from django.contrib.auth import authenticate, get_user_model, login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone as tz
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
-
-from blog.models import Category, Comment, Post
 
 from .forms import CommentForm, PostForm
 
@@ -36,7 +36,7 @@ def registration(request):
         request,
         'registration/registration_form.html',
         {'form': form}
-        )
+    )
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
@@ -66,10 +66,10 @@ class IndexListView(ListView):
 
     def get_queryset(self):
         return self.model.published_posts().select_related(
-            'author'
-            ).annotate(
-                comment_count=Count('comment')
-                           ).order_by('-pub_date', 'category', 'title')
+                                                           'author'
+        ).annotate(
+                   comment_count=Count('comment')
+        ).order_by('-pub_date', 'category', 'title')
 
 
 class CommentUpdateView(LoginRequiredMixin, UpdateView):
@@ -89,8 +89,8 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
             'blog:post_detail',
             kwargs={
                 'post_pk': self.kwargs.get('post_pk')
-                }
-                )
+            }
+        )
 
 
 class CommentDeleteView(LoginRequiredMixin, DeleteView):
@@ -110,8 +110,8 @@ class CommentDeleteView(LoginRequiredMixin, DeleteView):
             'blog:post_detail',
             kwargs={
                 'post_pk': self.kwargs.get('post_pk')
-                }
-                )
+            }
+        )
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -147,7 +147,7 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         context['form'] = CommentForm()
         context['comments'] = (
             self.object.comment.select_related('author')
-            )
+        )
         return context
 
 
@@ -174,8 +174,8 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
             'blog:post_detail',
             kwargs={
                 'post_pk': self.kwargs.get('post_pk')
-                }
-                )
+            }
+        )
 
 
 class PostDeleteView(LoginRequiredMixin, DeleteView):
@@ -207,14 +207,12 @@ class CategoryPosts(ListView):
         if not category_slug:
             return Post.objects.none()
         category = get_object_or_404(Category, slug=category_slug)
-        return Post.objects.filter(is_published=True,
-                                   pub_date__lt=tz.now(),
-                                   category=category,
-                                   ).annotate(
-                                       comment_count=Count(
-                                           'comment'
-                                           )
-                                       ).order_by('-pub_date')
+        return Post.objects.filter(
+               is_published=True,
+               pub_date__lt=tz.now(),
+               category=category).annotate(
+                   comment_count=Count('comment')
+               ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -250,11 +248,14 @@ class ProfileListView(ListView):
                 '-pub_date'
                 ).annotate(
                     comment_count=Count('comment')
-                    )
+                )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['profile'] = get_object_or_404(User, username=self.get_object())
+        context['profile'] = get_object_or_404(
+            User,
+            username=self.get_object()
+            )
         if context['profile']:
             return context
         return Http404

@@ -19,5 +19,5 @@ class PostForm(forms.ModelForm):
             'pub_date': forms.DateTimeInput(
                 format=('%d.%m.%YT%H:%M:%S'),
                 attrs={'type': 'datetime-local'}
-                )
+            )
         }

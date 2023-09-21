@@ -66,10 +66,10 @@ class IndexListView(ListView):
 
     def get_queryset(self):
         return self.model.published_posts().select_related(
-                                                           'author'
-        ).annotate(
-                   comment_count=Count('comment')
-        ).order_by('-pub_date', 'category', 'title')
+            'author'
+            ).annotate(
+                comment_count=Count('comment')
+            ).order_by('-pub_date', 'category', 'title')
 
 
 class CommentUpdateView(LoginRequiredMixin, UpdateView):
@@ -208,18 +208,20 @@ class CategoryPosts(ListView):
             return Post.objects.none()
         category = get_object_or_404(Category, slug=category_slug)
         return Post.objects.filter(
-               is_published=True,
-               pub_date__lt=tz.now(),
-               category=category).annotate(
-                   comment_count=Count('comment')
-               ).order_by('-pub_date')
+            is_published=True,
+            pub_date__lt=tz.now(),
+            category=category).annotate(
+                comment_count=Count('comment')
+                ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         category_slug = self.kwargs.get('category_slug')
         if category_slug:
             context['category'] = get_object_or_404(
-                Category, slug=category_slug, is_published=True
+                Category,
+                slug=category_slug,
+                is_published=True
                 )
         return context
 
@@ -245,9 +247,9 @@ class ProfileListView(ListView):
                 author__username=self.get_object()
             )
         return queryset.order_by(
-                '-pub_date'
-                ).annotate(
-                    comment_count=Count('comment')
+            '-pub_date'
+            ).annotate(
+                comment_count=Count('comment')
                 )
 
     def get_context_data(self, **kwargs):

@@ -67,9 +67,9 @@ class IndexListView(ListView):
     def get_queryset(self):
         return self.model.published_posts().select_related(
             'author'
-            ).annotate(
-                comment_count=Count('comment')
-            ).order_by('-pub_date', 'category', 'title')
+        ).annotate(
+            comment_count=Count('comment')
+        ).order_by('-pub_date', 'category', 'title')
 
 
 class CommentUpdateView(LoginRequiredMixin, UpdateView):
@@ -212,7 +212,7 @@ class CategoryPosts(ListView):
             pub_date__lt=tz.now(),
             category=category).annotate(
                 comment_count=Count('comment')
-                ).order_by('-pub_date')
+            ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -222,7 +222,7 @@ class CategoryPosts(ListView):
                 Category,
                 slug=category_slug,
                 is_published=True
-                )
+            )
         return context
 
 
@@ -248,16 +248,16 @@ class ProfileListView(ListView):
             )
         return queryset.order_by(
             '-pub_date'
-            ).annotate(
-                comment_count=Count('comment')
-                )
+        ).annotate(
+            comment_count=Count('comment')
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['profile'] = get_object_or_404(
             User,
             username=self.get_object()
-            )
+        )
         if context['profile']:
             return context
         return Http404

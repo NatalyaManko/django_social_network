@@ -212,7 +212,7 @@ class CategoryPosts(ListView):
             pub_date__lt=tz.now(),
             category=category).annotate(
                 comment_count=Count('comment')
-            ).order_by('-pub_date')
+        ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

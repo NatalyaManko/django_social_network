@@ -204,8 +204,8 @@ class ProfileListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset().filter(
-                author__username=self.get_object()
-            )
+            author__username=self.get_object()
+        )
         if self.request.user.id != self.get_object().id:
             queryset = queryset.filter(
                 is_published=True, pub_date__lt=tz.now(),

@@ -1,14 +1,11 @@
-import re
-
 from blog.models import Category, Comment, Post
-from django.contrib.auth import authenticate, get_user_model, login
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone as tz
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
@@ -18,25 +15,23 @@ from .forms import CommentForm, PostForm
 User = get_user_model()
 
 
-def registration(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        username = request.POST.get('username')
-        if form.is_valid() and not bool(re.search('[а-яА-Я]', username)):
-            form.save()
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            # выполняем аутентификацию
-            user = authenticate(username=username, password=password)
-            login(request, user)
-            return redirect('/')
-    else:
-        form = UserCreationForm()
-    return render(
-        request,
-        'registration/registration_form.html',
-        {'form': form}
-    )
+class CommentDispatchMixin():
+
+    def dispatch(self, request, *args, **kwargs):
+        instance = get_object_or_404(Comment, pk=kwargs['comment_pk'])
+        if instance.author != request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class PostDispatchMixin():
+    def dispatch(self, request, *args, **kwargs):
+        instance = get_object_or_404(
+            Post,
+            pk=kwargs['post_pk'])
+        if instance.author != request.user:
+            return redirect('blog:post_detail', self.kwargs['post_pk'])
+        return super().dispatch(request, *args, **kwargs)
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
@@ -72,17 +67,11 @@ class IndexListView(ListView):
         ).order_by('-pub_date', 'category', 'title')
 
 
-class CommentUpdateView(LoginRequiredMixin, UpdateView):
+class CommentUpdateView(LoginRequiredMixin, CommentDispatchMixin, UpdateView):
     model = Comment
     form_class = CommentForm
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_pk'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['comment_pk'])
-        if instance.author != request.user:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse(
@@ -93,17 +82,10 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
         )
 
 
-class CommentDeleteView(LoginRequiredMixin, DeleteView):
+class CommentDeleteView(LoginRequiredMixin, CommentDispatchMixin, DeleteView):
     model = Comment
     template_name = 'blog/comment.html'
-    success_url = reverse_lazy('blog:post_detail')
     pk_url_kwarg = 'comment_pk'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['comment_pk'])
-        if instance.author != request.user:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse(
@@ -137,7 +119,7 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         instance = get_object_or_404(
             Post,
             pk=kwargs['post_pk'])
-        if instance.is_published is False or instance.pub_date > tz.now():
+        if not instance.is_published or instance.pub_date > tz.now():
             if instance.author != request.user:
                 raise Http404
         return super().dispatch(request, *args, **kwargs)
@@ -151,19 +133,11 @@ class PostDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class PostUpdateView(LoginRequiredMixin, UpdateView):
+class PostUpdateView(LoginRequiredMixin, PostDispatchMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_pk'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(
-            Post,
-            pk=kwargs['post_pk'])
-        if instance.author != request.user:
-            return redirect('blog:post_detail', self.kwargs['post_pk'])
-        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -178,19 +152,11 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         )
 
 
-class PostDeleteView(LoginRequiredMixin, DeleteView):
+class PostDeleteView(LoginRequiredMixin, PostDispatchMixin, DeleteView):
     model = Post
     fields = '__all__'
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_pk'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(
-            Post,
-            pk=kwargs['post_pk'])
-        if instance.author != request.user:
-            return redirect('blog:post_detail', self.kwargs['post_pk'])
-        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse('blog:profile', kwargs={'username': self.request.user})
@@ -233,18 +199,16 @@ class ProfileListView(ListView):
 
     def get_object(self, queryset=None):
         username = self.kwargs.get('username')
-        return username
+        data = get_object_or_404(User, username=username)
+        return data
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.request.user.username == self.get_object():
-            queryset = queryset.filter(
+        queryset = super().get_queryset().filter(
                 author__username=self.get_object()
             )
-        else:
+        if self.request.user.id != self.get_object().id:
             queryset = queryset.filter(
-                Q(Q(is_published=True) & Q(pub_date__lt=tz.now())),
-                author__username=self.get_object()
+                is_published=True, pub_date__lt=tz.now(),
             )
         return queryset.order_by(
             '-pub_date'
@@ -269,7 +233,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'blog/user.html'
 
     def get_object(self, queryset=None):
-        return User.objects.get(username=self.kwargs.get('username'))
+        return User.objects.get(id=self.request.user.id)
 
     def get_success_url(self):
         return reverse('blog:index')

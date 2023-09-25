@@ -1,37 +1,18 @@
 from blog.models import Category, Comment, Post
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone as tz
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
 
 from .forms import CommentForm, PostForm
+from .mixins import CommentDispatchMixin, PostDispatchMixin
 
 User = get_user_model()
-
-
-class CommentDispatchMixin():
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['comment_pk'])
-        if instance.author != request.user:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
-
-
-class PostDispatchMixin():
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(
-            Post,
-            pk=kwargs['post_pk'])
-        if instance.author != request.user:
-            return redirect('blog:post_detail', self.kwargs['post_pk'])
-        return super().dispatch(request, *args, **kwargs)
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
@@ -204,7 +185,7 @@ class ProfileListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset().filter(
-            author__username=self.get_object()
+            author=self.get_object()
         )
         if self.request.user.id != self.get_object().id:
             queryset = queryset.filter(
@@ -218,10 +199,7 @@ class ProfileListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['profile'] = get_object_or_404(
-            User,
-            username=self.get_object()
-        )
+        context['profile'] = self.get_object()
         if context['profile']:
             return context
         return Http404
@@ -233,7 +211,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'blog/user.html'
 
     def get_object(self, queryset=None):
-        return User.objects.get(id=self.request.user.id)
+        return self.request.user
 
     def get_success_url(self):
         return reverse('blog:index')

@@ -3,7 +3,6 @@ from django.db import models as mdl
 from django.urls import reverse
 from django.utils import timezone as dt
 
-
 User = get_user_model()
 
 

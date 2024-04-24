@@ -1,6 +1,6 @@
 ## Cоциальная сеть для публикации сообщений («посты»).
 
-![alt text](D:\Изображения\_febdde7d-7681-4c24-a915-c0f451c41a49.jpg)
+![alt text](https://drive.google.com/file/d/1zB_jNOxkuEZGVIagjtrfqY2VxZH2xnLS/view?usp=drive_link)
 
 #### Описание проекта
 

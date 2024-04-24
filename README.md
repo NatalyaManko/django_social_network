@@ -1,7 +1,5 @@
 ## Cоциальная сеть для публикации сообщений («посты»).
 
-![alt text](https://drive.google.com/file/d/1zB_jNOxkuEZGVIagjtrfqY2VxZH2xnLS/view?usp=sharing)
-
 #### Описание проекта
 
 * Регистрация и вход в систему пользователей;

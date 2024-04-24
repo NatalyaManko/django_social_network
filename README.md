@@ -1,7 +1,6 @@
 ## Cоциальная сеть для публикации сообщений («посты»).
 
-![alt text](https://lh3.googleusercontent.com/vB9BEGjqxqOhAVhqOXKrEcTTnkI3JryBNUAOPPIbmDbDKM_acClHKI4_2e2EYPBwS2o)
-![Uploading _febdde7d-7681-4c24-a915-c0f451c41a49.jpg…]()
+![alt text](D:\Изображения\_febdde7d-7681-4c24-a915-c0f451c41a49.jpg)
 
 #### Описание проекта
 
